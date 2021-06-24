@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Mail;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,7 +33,7 @@ namespace WatchAndDo
         {
             var dialog = new FolderBrowserDialog();
 
-            if(dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 TxtDir.Text = dialog.SelectedPath;
             }
@@ -57,11 +58,11 @@ namespace WatchAndDo
         private static TreeViewItem CreateDirectoryItems(DirectoryInfo directoryInfo)
         {
             var directoryItem = new TreeViewItem { Header = directoryInfo.Name };
-            foreach(var directory in directoryInfo.GetDirectories())
+            foreach (var directory in directoryInfo.GetDirectories())
             {
                 directoryItem.Items.Add(CreateDirectoryItems(directory));
             }
-            foreach(var file in directoryInfo.GetFiles())
+            foreach (var file in directoryInfo.GetFiles())
             {
                 directoryItem.Items.Add(new TreeViewItem { Header = file.Name, Tag = file.FullName });
             }
@@ -142,6 +143,7 @@ namespace WatchAndDo
         private void Watcher_Created(object sender, FileSystemEventArgs e)
         {
             AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - created successfully");
+            SendMail(e);
         }
 
         private void Watcher_Renamed(object sender, RenamedEventArgs e)
@@ -218,6 +220,46 @@ namespace WatchAndDo
                 appendListViewsCalls.AppendListViewCalls(ex.StackTrace);
                 PrintException(ex.InnerException);
                 appendListViewsCalls.AppendListViewCalls("-----------------------------------");
+            }
+        }
+
+        private static void SendMail(FileSystemEventArgs e)
+        {
+            //using MailMessage mail = new();
+            //mail.From = new MailAddress("**********@***********.com");
+            //mail.To.Add("**********@***********.com");
+
+            //var path = e.FullPath;
+            //string readText = File.ReadAllText(path);
+            //mail.Body = readText;
+
+            //using SmtpClient smtpClient = new(); //SMTP port(TLS): 587 | SMTP port(SSL): 465
+            //smtpClient.UseDefaultCredentials = false;
+            //smtpClient.Credentials = new System.Net.NetworkCredential("**********@***********.com", "***********");
+            //smtpClient.Port = 587;
+            //smtpClient.Host = "smtp-mail.outlook.com";
+            //smtpClient.EnableSsl = true;
+            //smtpClient.Send(mail);
+
+            smtpClient.SendCompleted += SmtpClient_SendCompleted;
+        }
+
+        private static void SmtpClient_SendCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            string token = (string)e.UserState;
+            MainWindow appendListViewsCalls = new();
+
+            if (e.Cancelled)
+            {
+                appendListViewsCalls.AppendListViewCalls($"[{0}] Send canceled: " + token);
+            }
+            else if (e.Error != null)
+            {
+                appendListViewsCalls.AppendListViewCalls($"[{0}] {1}" + token + " " + e.Error.ToString());
+            }
+            else
+            {
+                appendListViewsCalls.AppendListViewCalls("Email successfully sent");
             }
         }
 
