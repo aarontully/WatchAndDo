@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WatchAndDo"
         mc:Ignorable="d"
-        Title="MainWindow"
+        Title="Watch and Act - Folder Monitoring"
         Height="450"
         Width="800"
         Closing="Window_Closing">
@@ -35,7 +35,7 @@
                     </Grid.RowDefinitions>
 
                     <GroupBox x:Name="GroupBox" Grid.Row="0" Header="Files" MinHeight="100" HorizontalAlignment="Left" VerticalAlignment="Top" Width="{Binding ActualWidth, ElementName=FilesGrid, Mode=OneWay}">
-                        <TreeView Name="treeFiles" SelectedItemChanged="treeFiles_SelectedItemChanged"/>
+                        <TreeView Name="treeFiles" SelectedItemChanged="TreeFiles_SelectedItemChanged"/>
                     </GroupBox>
                     <GroupBox x:Name="GroupBoxEditor" Grid.Row="1" MinHeight="100" Header="Editor" HorizontalAlignment="Left" VerticalAlignment="Top" Width="{Binding ActualWidth, ElementName=FilesGrid, Mode=OneWay}">
                         <TextBox x:Name="TxtEditor" TextChanged="TxtEditor_TextChanged"/>

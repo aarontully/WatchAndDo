@@ -76,7 +76,7 @@ namespace WatchAndDo
 
         private void BtnListen_Click(object sender, RoutedEventArgs e)
         {
-            //Check to see if filewatchewr is on or not and display usefull info
+            //Check to see if filewatcher is on or not and display usefull info
             if (isWatching)
             {
                 BtnListen.Content = "Start Watching";
@@ -137,7 +137,7 @@ namespace WatchAndDo
             //Specify what to do when a file is changed, created, or deleted  
 
             //filter file types  
-            if (Regex.IsMatch(System.IO.Path.GetExtension(e.FullPath), @"\.txt", RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(System.IO.Path.GetExtension(e.FullPath), @"\.*", RegexOptions.IgnoreCase))
             {
                 try
                 {
@@ -156,7 +156,6 @@ namespace WatchAndDo
                             AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - Processed the changes successfully");
                             lastRead = lastWriteTime;
                         }
-
                     }
                 }
                 catch (FileNotFoundException)
@@ -205,14 +204,14 @@ namespace WatchAndDo
 
         private void AppendListViewCalls(object input)
         {
-            this.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate ()
+            Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate ()
             {
-                this.ListResults.Items.Add(input);
+                ListResults.Items.Add(input);
 
             }));
         }
 
-        private void treeFiles_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void TreeFiles_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             try
             {
