@@ -9,18 +9,13 @@ using Timer = System.Windows.Forms.Timer;
 
 namespace WatchAndDo
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         FileSystemWatcher watcher;
-        static readonly object locker = new();
         private readonly Timer timer = new();
         private bool isWatching;
         private bool canChange;
         private string filePath = string.Empty;
-        DateTime lastRead = DateTime.MinValue;
 
         public MainWindow()
         {
@@ -102,13 +97,16 @@ namespace WatchAndDo
             timer.Interval = 500;
             AppendListViewCalls(DateTime.Now + " - Watcher Started");
 
-            watcher = new FileSystemWatcher();
-            watcher.Path = TxtDir.Text;
-            watcher.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
-            watcher.Filter = "*.*";
-            watcher.Created += new FileSystemEventHandler(OnChanged);
-            watcher.Renamed += new RenamedEventHandler(OnChanged);
-            watcher.Changed += new FileSystemEventHandler(OnChanged);
+            watcher = new FileSystemWatcher
+            {
+                Path = TxtDir.Text,
+                NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Attributes,
+                Filter = "*.*"
+            };
+            watcher.Created += Watcher_Created;
+            watcher.Renamed += Watcher_Renamed;
+            watcher.Changed += Watcher_Changed;
+            watcher.Deleted += Watcher_Deleted;
             watcher.EnableRaisingEvents = true;
         }
 
@@ -132,74 +130,30 @@ namespace WatchAndDo
             }
         }
 
-        private void OnChanged(object sender, FileSystemEventArgs e)
+        private void Watcher_Changed(object sender, FileSystemEventArgs e)
         {
-            //Specify what to do when a file is changed, created, or deleted  
-
-            //filter file types  
-            if (Regex.IsMatch(System.IO.Path.GetExtension(e.FullPath), @"\.*", RegexOptions.IgnoreCase))
+            if (e.ChangeType != WatcherChangeTypes.Changed)
             {
-                try
-                {
-                    while (IsFileLocked(e.FullPath))
-                    {
-                        System.Threading.Thread.Sleep(100);
-                    }
-
-                    lock (locker)
-                    {
-                        //Process file  
-                        //Do further activities  
-                        DateTime lastWriteTime = File.GetLastWriteTime(e.FullPath);
-                        if (lastWriteTime != lastRead)
-                        {
-                            AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - Processed the changes successfully");
-                            lastRead = lastWriteTime;
-                        }
-                    }
-                }
-                catch (FileNotFoundException)
-                {
-                    //Stop processing  
-                }
-                catch (Exception ex)
-                {
-                    AppendListViewCalls("File: \"" + e.FullPath + "\" ERROR processing file (" + ex.Message + ")");
-                }
+                return;
             }
-
-            else
-                AppendListViewCalls("File: \"" + e.FullPath + "\" has been ignored");
+            AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - Processed the changes successfully");
         }
 
-        private static bool IsFileLocked(string file)
+        private void Watcher_Created(object sender, FileSystemEventArgs e)
         {
-            FileStream stream = null;
+            AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - created successfully");
+        }
 
-            try
-            {
-                stream = new FileInfo(file).Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-            }
-            catch (FileNotFoundException)
-            {
-                throw;
-            }
-            catch (IOException)
-            {
-                //the file is unavailable because it is:  
-                //still being written to  
-                //or being processed by another thread  
-                //or does not exist (has already been processed)  
-                return true;
-            }
-            finally
-            {
-                if (stream != null)
-                    stream.Close();
-            }
+        private void Watcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            AppendListViewCalls("Renamed successfully:");
+            AppendListViewCalls("Old File: \"" + e.OldFullPath + "\"- " + DateTime.Now);
+            AppendListViewCalls("New File: \"" + e.FullPath + "\"- " + DateTime.Now);
+        }
 
-            //file is not locked  
-            return false;
+        private void Watcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            AppendListViewCalls("File: \"" + e.FullPath + "\"- " + DateTime.Now + " - deleted successfully");
         }
 
         private void AppendListViewCalls(object input)
@@ -247,6 +201,23 @@ namespace WatchAndDo
             catch (Exception ex)
             {
                 AppendListViewCalls(ex.Message);
+            }
+        }
+
+        private static void OnError(object sender, ErrorEventArgs e) =>
+            PrintException(e.GetException());
+
+        private static void PrintException(Exception ex)
+        {
+            if (ex != null)
+            {
+                MainWindow appendListViewsCalls = new();
+                appendListViewsCalls.AppendListViewCalls("-----------------------------------");
+                appendListViewsCalls.AppendListViewCalls($"Message: {ex.Message}");
+                appendListViewsCalls.AppendListViewCalls("Stacktrace:");
+                appendListViewsCalls.AppendListViewCalls(ex.StackTrace);
+                PrintException(ex.InnerException);
+                appendListViewsCalls.AppendListViewCalls("-----------------------------------");
             }
         }
 
